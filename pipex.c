@@ -4,67 +4,78 @@
 #include <sys/wait.h>
 #include <stdio.h>
 
-void	copy_content(int fd, char *outfile, int	here_doc)
-{
-	int		fd_out;
-	char	buf[1024];
-	int		ret;
-	int		flag;
+#include "pipex.h"
 
-	flag = O_WRONLY | O_CREAT;
-	if (here_doc)
-		flag = flag | O_APPEND;
-	else
-		flag = flag | O_TRUNC;
-	fd_out = open(outfile, flag);
-	ret = read(fd, buf, 1024);
-	while (ret > 0)
+char	**get_path(char **env)
+{
+	while (*env && !ft_strcmp(*env, "PATH", '='))
+		++env;
+	if (!*env)
+		return (0);
+	return (ft_split((*env) + 5, ':'));
+}
+
+char	*find_path(char **path, char *exe)
+{
+	char	*tmp;
+
+	if (!path)
+		return (exe);
+	if (!access(exe, X_OK))
+		return (exe);
+	while (*path)
 	{
-		write(fd_out, buf, ret);
-		ret = read(fd, buf, 1024);
+		tmp = ft_strjoin(*path, exe);
+		if (!access(tmp, X_OK)) {
+			return (tmp);}
+		free(tmp);
+		++path;
 	}
-	close(fd);
-	close(fd_out);
+	return (exe);
+}
+
+int	get_infile(char	*file, int here_doc)
+{
+	int		fd[2];
+	char	buf[1025];
+	char	*line;
+	int		start;
+	int		end;
+
+	if (!here_doc)
+		return (ft_open(file, O_RDONLY));
+	end = 1024;
+	start = 1024;
+	ft_pipe(fd);
+	line = gnl(buf, &start, &end);
+	while (*line && !ft_strcmp(line, file, '\n'))
+	{
+		here_doc = 0;
+		while (line[here_doc])
+			++here_doc;
+		write(fd[1], line, here_doc);
+		free(line);
+		line = gnl(buf, &start, &end);
+	}
+	free(line);
+	close(fd[1]);
+	return (fd[0]);
 }
 
 void	child(int fd[3], char **path, char **env, char **argv)
 {
 	close(fd[0]);
-	dup2(fd[1], STDOUT_FILENO);
-	dup2(fd[2], STDIN_FILENO);
+	ft_dup2(fd[1], STDOUT_FILENO);
+	ft_dup2(fd[2], STDIN_FILENO);
 	execve(find_path(path, argv[0]), argv, env);
-	close(fd[1]);
-	close(fd[2]);
-	exit(0);
-}
-
-int	ft_fork()
-{
-	int	pid;
-
-	pid = fork();
-	if (pid < 0)
-	{
-		perror("fork");
-		exit(EXIT_FAILURE);
-	}
-	return (pid);
-}
-
-ft_strcmp(char *str1, char *str2, char c)
-{
-	while (*srt1 && *str1 != c)
-		if (*(str1++) != *(str2++))
-			return (0);
-	if (*str1 == c && !(*str2))
-		return (1);
-	return (0);
+	perror("execve");
+	exit(EXIT_FAILURE);
 }
 
 int	main(int argc, char **argv, char **env)
 {
 	int			current;
-	const int	here_doc = ft_strcmp(argv[1], here_doc, 0);
+	const int	here_doc = ft_strcmp(argv[1], "here_doc", 0);
 	int			fd[3];
 	int			pid;
 	char		**path;
@@ -75,10 +86,10 @@ int	main(int argc, char **argv, char **env)
 	while (++current < argc - 1)
 	{
 		fd[2] = fd[0];
-		pipe(fd);
+		ft_pipe(fd);
 		pid = ft_fork();
 		if (!pid)
-			child(fd, path, env, ft_split(argv[current]), 46543216832168654687468);
+			child(fd, path, env, ft_split(argv[current], ' '));
 		else
 		{
 			close(fd[1]);
