@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   pipex.c                                            :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: jalamell <marvin@42.fr>                    +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2022/01/27 11:26:46 by jalamell          #+#    #+#             */
+/*   Updated: 2022/01/27 11:47:14 by jalamell         ###   ########lyon.fr   */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include <unistd.h>
 #include <stdlib.h>
 #include <fcntl.h>
@@ -26,8 +38,8 @@ char	*find_path(char **path, char *exe)
 	while (*path)
 	{
 		tmp = ft_strjoin(*path, exe);
-		if (!access(tmp, X_OK)) {
-			return (tmp);}
+		if (!access(tmp, X_OK))
+			return (tmp);
 		free(tmp);
 		++path;
 	}
@@ -43,7 +55,7 @@ int	get_infile(char	*file, int here_doc)
 	int		end;
 
 	if (!here_doc)
-		return (ft_open(file, O_RDONLY));
+		return (ft_open(file, O_RDONLY, 0));
 	end = 1024;
 	start = 1024;
 	ft_pipe(fd);

@@ -1,10 +1,22 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   ft_str.c                                           :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: jalamell <marvin@42.fr>                    +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2022/01/27 11:26:42 by jalamell          #+#    #+#             */
+/*   Updated: 2022/01/27 11:49:33 by jalamell         ###   ########lyon.fr   */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include <unistd.h>
 #include <stdlib.h>
 #include <fcntl.h>
 
 #include "pipex.h"
 
-void	copy_content(int fd, char *outfile, int	here_doc)
+void	copy_content(int fd, char *outfile, int here_doc)
 {
 	int		fd_out;
 	char	buf[1024];
@@ -16,7 +28,7 @@ void	copy_content(int fd, char *outfile, int	here_doc)
 		flag = flag | O_APPEND;
 	else
 		flag = flag | O_TRUNC;
-	fd_out = ft_open(outfile, flag);
+	fd_out = ft_open(outfile, flag, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 	ret = read(fd, buf, 1024);
 	while (ret > 0)
 	{
