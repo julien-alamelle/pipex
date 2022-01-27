@@ -6,37 +6,72 @@
 /*   By: jalamell <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/01/27 11:26:42 by jalamell          #+#    #+#             */
-/*   Updated: 2022/01/27 11:49:33 by jalamell         ###   ########lyon.fr   */
+/*   Updated: 2022/01/27 12:45:03 by jalamell         ###   ########lyon.fr   */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include <unistd.h>
-#include <stdlib.h>
-#include <fcntl.h>
-
 #include "pipex.h"
 
-void	copy_content(int fd, char *outfile, int here_doc)
-{
-	int		fd_out;
-	char	buf[1024];
-	int		ret;
-	int		flag;
+/* ********************************** */
+/* mode = 0 : count number of words   */
+/* mode = 1 : count size od word      */
+/* ********************************** */
 
-	flag = O_WRONLY | O_CREAT;
-	if (here_doc)
-		flag = flag | O_APPEND;
-	else
-		flag = flag | O_TRUNC;
-	fd_out = ft_open(outfile, flag, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
-	ret = read(fd, buf, 1024);
-	while (ret > 0)
+static int	ft_count(unsigned char *str, char c, char mode)
+{
+	int				count;
+
+	count = 0;
+	while (str[0] && !(mode && str[0] == c))
 	{
-		write(fd_out, buf, ret);
-		ret = read(fd, buf, 1024);
+		if (mode)
+			++count;
+		else
+		{
+			if ((!str[1] || str[1] == c) && str[0] != c)
+				++count;
+		}
+		++str;
 	}
-	close(fd);
-	close(fd_out);
+	return (count);
+}
+
+static void	ft_fill_ret(char **ret, unsigned char *str, char c, int nb_word)
+{
+	int		size;
+	int		j;
+	int		i;
+
+	i = -1;
+	while (++i < nb_word)
+	{
+		while (*str == c)
+			++str;
+		size = ft_count(str, c, 1);
+		if (c == ':')
+			++size;
+		*ret = ft_malloc((size + 1) * sizeof(char *));
+		j = -1;
+		while (++j < size)
+			(*ret)[j] = str[j];
+		if (c == ':')
+			(*ret)[j - 1] = '/';
+		(*ret)[j] = 0;
+		str += size;
+		++ret;
+	}
+}
+
+char	**ft_split(char *str, char c)
+{
+	int		nb_word;
+	char	**ret;
+
+	nb_word = ft_count((unsigned char *)str, c, 0);
+	ret = ft_malloc((nb_word + 1) * sizeof(char *));
+	ret[nb_word] = 0;
+	ft_fill_ret(ret, (unsigned char *)str, c, nb_word);
+	return (ret);
 }
 
 int	ft_strcmp(char *str1, char *str2, char c)
@@ -67,55 +102,5 @@ char	*ft_strjoin(char *str1, char *str2)
 		ret[i + j] = str2[j];
 	while (i--)
 		ret[i] = str1[i];
-	return (ret);
-}
-
-static int	gnl2(char *buf, int *start, int *end, int *loop)
-{
-	int	i;
-
-	if (*start == *end)
-	{
-		*end = read(0, buf, 1024);
-		*start = 0;
-	}
-	if (*start >= *end)
-		*loop = 0;
-	i = 0;
-	while (*start + i < *end && buf[*start + i] != '\n')
-		++i;
-	if (*start + i < *end && buf[*start + i] == '\n')
-	{
-		++i;
-		*loop = 0;
-	}
-	return (i);
-}
-
-char	*gnl(char *buf, int	*start, int *end)
-{
-	char	*ret;
-	char	*tmp;
-	int		loop;
-	int		i;
-	char	cheat;
-
-	buf[1024] = 0;
-	ret = ft_malloc(1);
-	ret[0] = 0;
-	loop = 1;
-	while (loop)
-	{
-		i = gnl2(buf, start, end, &loop);
-		cheat = buf[*start + i];
-		buf[*start + i] = 0;
-		tmp = ft_strjoin(ret, buf + (*start));
-		*start += i;
-		buf[*start] = cheat;
-		free(ret);
-		ret = tmp;
-	}
-	if (!(*ret))
-		write(2, "warning, here_doc reach end-of-file\n", 36);
 	return (ret);
 }

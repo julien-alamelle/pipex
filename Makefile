@@ -6,7 +6,7 @@
 #    By: jalamell <marvin@42.fr>                    +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2021/11/02 13:18:09 by jalamell          #+#    #+#              #
-#    Updated: 2022/01/27 11:51:54 by jalamell         ###   ########lyon.fr    #
+#    Updated: 2022/01/27 18:28:34 by jalamell         ###   ########lyon.fr    #
 #                                                                              #
 # **************************************************************************** #
 
@@ -14,7 +14,7 @@ CC=gcc
 CFLAGS=-Wall -Wextra -Werror
 INCLUDE=
 HFILE=pipex.h
-FILES=pipex ft_str ft_split ft_secure
+FILES=pipex ft_str ft_file ft_secure
 SRC=$(addsuffix .c,$(FILES))
 OBJ=$(addsuffix .o,$(FILES))
 NAME=pipex

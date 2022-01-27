@@ -6,19 +6,18 @@
 /*   By: jalamell <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/01/27 11:26:46 by jalamell          #+#    #+#             */
-/*   Updated: 2022/01/27 11:47:14 by jalamell         ###   ########lyon.fr   */
+/*   Updated: 2022/01/27 18:43:47 by jalamell         ###   ########lyon.fr   */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include <unistd.h>
 #include <stdlib.h>
-#include <fcntl.h>
 #include <sys/wait.h>
 #include <stdio.h>
 
 #include "pipex.h"
 
-char	**get_path(char **env)
+static char	**get_path(char **env)
 {
 	while (*env && !ft_strcmp(*env, "PATH", '='))
 		++env;
@@ -27,7 +26,7 @@ char	**get_path(char **env)
 	return (ft_split((*env) + 5, ':'));
 }
 
-char	*find_path(char **path, char *exe)
+static char	*find_path(char **path, char *exe)
 {
 	char	*tmp;
 
@@ -46,69 +45,66 @@ char	*find_path(char **path, char *exe)
 	return (exe);
 }
 
-int	get_infile(char	*file, int here_doc)
+static void	child(t_data *data, char **env, char **argv)
 {
-	int		fd[2];
-	char	buf[1025];
-	char	*line;
-	int		start;
-	int		end;
-
-	if (!here_doc)
-		return (ft_open(file, O_RDONLY, 0));
-	end = 1024;
-	start = 1024;
-	ft_pipe(fd);
-	line = gnl(buf, &start, &end);
-	while (*line && !ft_strcmp(line, file, '\n'))
+	close(data->fd[0]);
+	if (data->current == data->here_doc + 1)
 	{
-		here_doc = 0;
-		while (line[here_doc])
-			++here_doc;
-		write(fd[1], line, here_doc);
-		free(line);
-		line = gnl(buf, &start, &end);
+		get_infile(data->fd[1], argv[0], data->here_doc);
+		exit(EXIT_SUCCESS);
 	}
-	free(line);
-	close(fd[1]);
-	return (fd[0]);
-}
-
-void	child(int fd[3], char **path, char **env, char **argv)
-{
-	close(fd[0]);
-	ft_dup2(fd[1], STDOUT_FILENO);
-	ft_dup2(fd[2], STDIN_FILENO);
-	execve(find_path(path, argv[0]), argv, env);
+	ft_dup2(data->fd[1], STDOUT_FILENO);
+	ft_dup2(data->fd[2], STDIN_FILENO);
+	execve(find_path(data->path, argv[0]), argv, env);
 	perror("execve");
 	exit(EXIT_FAILURE);
 }
 
+static int	check_arg(int ac, char **av)
+{
+	int	ret;
+
+	if (ac < 3)
+	{
+		write(2,
+			"2 argument required (excluding executable name and here_doc)\n",
+			61);
+		exit(EXIT_FAILURE);
+	}
+	ret = ft_strcmp(av[1], "here_doc", 0);
+	if (ac == 3 && ret)
+	{
+		write(2,
+			"2 argument required (excluding executable name and here_doc)\n",
+			61);
+		exit(EXIT_FAILURE);
+	}
+	return (ret);
+}
+
 int	main(int argc, char **argv, char **env)
 {
-	int			current;
-	const int	here_doc = ft_strcmp(argv[1], "here_doc", 0);
-	int			fd[3];
-	int			pid;
-	char		**path;
+	t_data	data;
 
-	path = get_path(env);
-	current = 1 + here_doc;
-	fd[0] = get_infile(argv[current], here_doc);
-	while (++current < argc - 1)
+	data.here_doc = check_arg(argc, argv);
+	data.path = get_path(env);
+	data.current = data.here_doc;
+	data.fd[0] = 0;
+	while (++data.current < argc - 1)
 	{
-		fd[2] = fd[0];
-		ft_pipe(fd);
-		pid = ft_fork();
-		if (!pid)
-			child(fd, path, env, ft_split(argv[current], ' '));
+		data.fd[2] = data.fd[0];
+		ft_pipe(data.fd);
+		data.pid = ft_fork();
+		if (!data.pid)
+			child(&data, env, ft_split(argv[data.current], ' '));
 		else
 		{
-			close(fd[1]);
-			close(fd[2]);
-			wait(0);
+			close(data.fd[1]);
+			close(data.fd[2]);
 		}
 	}
-	copy_content(fd[0], argv[current], here_doc);
+	copy_content(data.fd[0], argv[data.current], data.here_doc);
+	while (wait(0) >= 0)
+		;
 	return (0);
 }
