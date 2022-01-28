@@ -6,7 +6,7 @@
 /*   By: jalamell <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/01/27 11:26:46 by jalamell          #+#    #+#             */
-/*   Updated: 2022/01/28 17:47:11 by jalamell         ###   ########lyon.fr   */
+/*   Updated: 2022/01/28 17:29:07 by jalamell         ###   ########lyon.fr   */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -62,14 +62,24 @@ static void	child(t_data *data, char **env, char **argv)
 
 static int	check_arg(int ac, char **av)
 {
-	(void) av;
-	if (ac != 5)
+	int	ret;
+
+	if (ac < 3)
 	{
 		write(2,
-			"exactly 4 argument required (excluding executable name)\n", 57);
+			"2 argument required (excluding executable name and here_doc)\n",
+			61);
 		exit(EXIT_FAILURE);
 	}
-	return (0);
+	ret = ft_strcmp(av[1], "here_doc", 0);
+	if (ac == 3 && ret)
+	{
+		write(2,
+			"2 argument required (excluding executable name and here_doc)\n",
+			61);
+		exit(EXIT_FAILURE);
+	}
+	return (ret);
 }
 
 int	main(int argc, char **argv, char **env)
